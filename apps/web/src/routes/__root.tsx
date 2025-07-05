@@ -1,7 +1,6 @@
 import Header from "@/components/header";
 import Loader from "@/components/loader";
-import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
+
 import {
   HeadContent,
   Outlet,
@@ -9,6 +8,7 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+
 import "../index.css";
 
 export interface RouterAppContext {}
@@ -18,11 +18,12 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
   head: () => ({
     meta: [
       {
-        title: "My App",
+        title: "Compilerz",
       },
       {
-        name: "description",
-        content: "My App is a web application",
+        name: "Compilerz",
+        content:
+          "Compilerz is a online compiler with support for multiple languages",
       },
     ],
     links: [
@@ -39,17 +40,12 @@ function RootComponent() {
     select: (s) => s.isLoading,
   });
 
-
   return (
     <>
       <HeadContent />
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <div className="grid grid-rows-[auto_1fr] h-svh">
-          <Header />
-          {isFetching ? <Loader /> : <Outlet />}
-        </div>
-        <Toaster richColors />
-      </ThemeProvider>
+      <div className="bg-neutral-950 text-white flex flex-col h-svh overflow-hidden">
+        {isFetching ? <Loader /> : <Outlet />}
+      </div>
       <TanStackRouterDevtools position="bottom-left" />
     </>
   );

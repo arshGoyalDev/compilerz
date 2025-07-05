@@ -1,32 +1,32 @@
-import { Link } from "@tanstack/react-router";
+import { useLocation } from "@tanstack/react-router";
 
-import { ModeToggle } from "./mode-toggle";
+const Header = () => {
+  const location = useLocation();
 
-export default function Header() {
   const links = [
-    { to: "/", label: "Home" },
+    { to: "/c", label: "C" },
+    { to: "/python", label: "Python" },
+    { to: "/rust", label: "Rust" },
+    { to: "/java", label: "Java" },
+    { to: "/js", label: "JavaScript" },
+    { to: "/ts", label: "TypeScript" },
   ];
 
+  const currentLink = links.find(link => link.to === location.pathname);
+
   return (
-    <div>
-      <div className="flex flex-row items-center justify-between px-2 py-1">
-        <nav className="flex gap-4 text-lg">
-          {links.map(({ to, label }) => {
-            return (
-              <Link
-                key={to}
-                to={to}
-              >
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="flex items-center gap-2">
-          <ModeToggle />
-        </div>
+    <div className="flex flex-row items-center justify-between px-5 py-4">
+      <div>
+        <h2 className="text-2xl font-medium tracking-wider mb-2">Compilerz</h2>
+        {currentLink && (
+          <div>
+            <h3 className="text-lg font-extralight tracking-widest">Online {currentLink.label} Compiler</h3>
+
+          </div>
+        )}
       </div>
-      <hr />
     </div>
   );
-}
+};
+
+export default Header;

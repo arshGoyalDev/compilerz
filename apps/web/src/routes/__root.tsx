@@ -1,15 +1,13 @@
-import Header from "@/components/header";
-import Loader from "@/components/loader";
-
 import {
   HeadContent,
   Outlet,
   createRootRouteWithContext,
   useRouterState,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 import "../index.css";
+
+import { SocketProvider, ThemeProvider } from "@/context";
 
 export interface RouterAppContext {}
 
@@ -41,12 +39,13 @@ function RootComponent() {
   });
 
   return (
-    <>
-      <HeadContent />
-      <div className="bg-neutral-950 text-white flex flex-col h-svh overflow-hidden">
-        {isFetching ? <Loader /> : <Outlet />}
-      </div>
-      <TanStackRouterDevtools position="bottom-left" />
-    </>
+    <ThemeProvider>
+      <SocketProvider>
+        <HeadContent />
+        <div className="flex flex-col h-svh overflow-hidden">
+          {isFetching ? <div>Hello, Loader</div> : <Outlet />}
+        </div>
+      </SocketProvider>
+    </ThemeProvider>
   );
 }

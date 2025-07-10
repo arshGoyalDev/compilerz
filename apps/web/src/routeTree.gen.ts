@@ -9,55 +9,48 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as CRouteImport } from './routes/c'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CompilerLangRouteImport } from './routes/compiler/$lang'
 
-const CRoute = CRouteImport.update({
-  id: '/c',
-  path: '/c',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CompilerLangRoute = CompilerLangRouteImport.update({
+  id: '/compiler/$lang',
+  path: '/compiler/$lang',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/c': typeof CRoute
+  '/compiler/$lang': typeof CompilerLangRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/c': typeof CRoute
+  '/compiler/$lang': typeof CompilerLangRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/c': typeof CRoute
+  '/compiler/$lang': typeof CompilerLangRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/c'
+  fullPaths: '/' | '/compiler/$lang'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/c'
-  id: '__root__' | '/' | '/c'
+  to: '/' | '/compiler/$lang'
+  id: '__root__' | '/' | '/compiler/$lang'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CRoute: typeof CRoute
+  CompilerLangRoute: typeof CompilerLangRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/c': {
-      id: '/c'
-      path: '/c'
-      fullPath: '/c'
-      preLoaderRoute: typeof CRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -65,12 +58,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/compiler/$lang': {
+      id: '/compiler/$lang'
+      path: '/compiler/$lang'
+      fullPath: '/compiler/$lang'
+      preLoaderRoute: typeof CompilerLangRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CRoute: CRoute,
+  CompilerLangRoute: CompilerLangRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

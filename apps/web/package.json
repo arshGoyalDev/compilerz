@@ -42,7 +42,7 @@
     "@uiw/codemirror-themes": "^4.24.0",
     "@codemirror/lang-cpp": "^6.0.2",
     "socket.io-client": "^4.8.1",
-    "zod": "^3.25.16",
+    "axios": "^1.11.0",
     "@tanstack/react-query": "^5.80.5"
   }
 }

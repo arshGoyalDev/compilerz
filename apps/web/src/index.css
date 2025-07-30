@@ -4,11 +4,46 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Inter", "Geist", ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-sans:
+    "Inter", "Geist", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
 html,
 body {
   @apply dark:bg-neutral-950 dark:text-white;
+}
+
+.animate-loading {
+  animation: loading-compiler 2s infinite ease-in-out;
+}
+
+@keyframes loading-compiler {
+  20% {
+    right: 0;
+    bottom: 0;
+    left: 34px;
+    top: 34px;
+  }
+  
+  40% {
+    right: 0;
+    top: 0;
+    left: 34px;
+    bottom: 34px;
+  }
+  
+  60% {
+    left: 0;
+    top: 0;
+    bottom: 34px;
+    right: 34px;
+  }
+
+  0%, 80%, 100% {
+    left: 0;
+    top: 34px;
+    bottom: 0;
+    right: 34px;
+  }
 }

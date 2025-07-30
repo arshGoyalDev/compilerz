@@ -1,24 +1,30 @@
 import Editor from "@/components/editor";
-import Output from "@/components/output";
+import LoadingScreen from "@/components/loading-screen";
+import Terminal from "@/components/terminal";
 import SideMenu from "@/components/sidemenu";
 
-import {
-  createFileRoute,
-  useParams,
-} from "@tanstack/react-router";
+import { createFileRoute, useParams } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { apiClient } from "@/lib/api-client";
+import { START_CONTAINER_ROUTE, STOP_CONTAINER_ROUTE } from "@/lib/constants";
+import { useSocket } from "@/context";
 
 const CompilerPage = () => {
   const { lang } = useParams({ strict: false });
+  const socket = useSocket();
+  const [containerId, setContainerId] = useState<string | null>(null);
+
+  const [loadingCompiler, setLoadingCompiler] = useState(true);
 
   const langSpecific = [
     {
       lang: "c",
       fileExtension: "c",
       codeExample: `#include<stdio.h>
-  
+
 int main() {
   printf("Hello, World!\\n");
-    
+
   return 0;
 }`,
     },
@@ -30,7 +36,7 @@ using namespace std;
 
 int main() {
     cout << "Hello, World!" << endl;
-    
+
     return 0;
 }`,
     },
@@ -85,17 +91,80 @@ func main() {
 
   const currentLang = langSpecific.find((item) => item.lang === lang);
 
+  useEffect(() => {
+    let cId: string;
+
+    const startContainer = async () => {
+      try {
+        const response = await apiClient.post(START_CONTAINER_ROUTE, {
+          lang: currentLang?.lang ?? "",
+        });
+
+        console.log(response);
+
+        if (response.status === 201) {
+          cId = response.data.containerInfo.containerId;
+          setContainerId(cId);
+          setLoadingCompiler(false);
+        }
+
+        socket?.socket?.emit("set-container-id", {
+          containerId: cId,
+        });
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    startContainer();
+
+    return () => {
+      const stopContainer = async () => {
+        try {
+          const response = await apiClient.post(STOP_CONTAINER_ROUTE, {
+            containerId: cId,
+          });
+
+          if (response.status === 200) {
+            setContainerId(null);
+            setLoadingCompiler(false);
+
+            socket?.socket?.emit("set-container-id", {
+              containerId: null,
+            });
+          }
+        } catch (error) {
+          console.log(error);
+        }
+      };
+
+      stopContainer();
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log(containerId);
+  }, [containerId]);
+
   return (
     <main className="h-screen grid grid-cols-[auto_1fr]">
       <SideMenu />
-      <div className="grid h-screen md:grid-cols-2">
-      {currentLang && (
-        <Editor
-          filename={`main.${currentLang?.fileExtension}`}
-          codeExample={currentLang?.codeExample}
-        />
-      )}
-      <Output />
+
+      <div className="relative grid h-screen md:grid-cols-2">
+        {loadingCompiler ? (
+          <LoadingScreen />
+        ) : (
+          <>
+            {currentLang && (
+              <Editor
+                filename={`main.${currentLang?.fileExtension}`}
+                codeExample={currentLang?.codeExample}
+                containerId={containerId}
+              />
+            )}
+            <Terminal />
+          </>
+        )}
       </div>
     </main>
   );

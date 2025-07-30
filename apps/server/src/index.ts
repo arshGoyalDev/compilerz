@@ -1,18 +1,19 @@
 import express from "express";
-
 import cors from "cors";
-
 import "dotenv/config";
 
-import {Server as SocketServer} from 'socket.io';
-import { setupSocket } from "./services/socket";
+import routes from "./routers";
 
+import { Server as SocketServer } from 'socket.io';
+import socketService from "./services/socket";
+
+import dockerService from "./services/docker";
 
 const app = express();
 
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: process.env.ORIGIN,
     methods: ["GET", "POST"],
   })
 );
@@ -23,11 +24,15 @@ app.get("/", (_req, res) => {
   res.status(200).send("OK");
 });
 
+app.use('/api', routes);
+
 const port = process.env.PORT || 3000;
 
 const server = app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
+
+dockerService.init();
 
 const io = new SocketServer(server, {
   cors: {
@@ -36,4 +41,4 @@ const io = new SocketServer(server, {
   },
 })
 
-setupSocket(io);
+socketService.init(io);

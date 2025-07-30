@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode, useRef, useEffect } from "react";
+import { createContext, useContext, type ReactNode, useRef, useEffect, useState } from "react";
 
 import { io, Socket } from "socket.io-client";
 
@@ -6,33 +6,43 @@ interface SocketContextType {
   socket: Socket | null;
 }
 
-const SocketContext = createContext<SocketContextType>({
-  socket: null,
-});
+const SocketContext = createContext<SocketContextType | null>(null);
 
 const useSocket = () => useContext(SocketContext);
 
 const SocketProvider = ({ children }: { children: ReactNode }) => {
-  const socket = useRef<Socket | null>(null);
+  // const socket = useRef<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    socket.current = io(import.meta.env.VITE_SERVER_URL, {
+    const socketInstance = io(import.meta.env.VITE_SERVER_URL, {
+      withCredentials: true,
       transports: ["websocket"],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
     });
-
-    socket.current.on("connect", () => {
-      return true;
+    
+    socketInstance.on("connect", () => {
+      console.log("dkjdk")
     });
+    
+    socketInstance.on('execution-complete', ({ success, output, exitCode }: { success: boolean; output: string; exitCode: string}) => {
+      console.log(`Output`, output);
+    })
+    
+    socketInstance.on("execution-error", (data) => {
+      console.log("Error:" ,data);
+    })
 
+    setSocket(socketInstance);
+    
     return () => {
-      socket.current?.disconnect();
+      if (socketInstance) {
+        socketInstance.disconnect();
+      }
     }
   }, []);
 
   return (
-    <SocketContext.Provider value={{ socket: socket.current }}>
+    <SocketContext.Provider value={{ socket }}>
       {children}
     </SocketContext.Provider>
   );

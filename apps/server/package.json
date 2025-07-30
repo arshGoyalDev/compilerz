@@ -5,22 +5,28 @@
   "scripts": {
     "build": "tsc && tsc-alias",
     "check-types": "tsc --noEmit",
-    "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
-    "dev": "bun run --hot src/index.ts",
-    "start": "bun run dist/src/index.js"
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/src/index.js"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
-    "zod": "^3.25.16",
     "express": "^5.1.0",
     "cors": "^2.8.5",
-    "socket.io": "4.8.1"
+    "socket.io": "^4.8.1",
+    "dockerode": "^4.0.7",
+    "uuid": "^9.0.1",
+    "tar-fs": "^3.0.4",
+    "node-pty": "^1.0.0"
   },
   "devDependencies": {
     "tsc-alias": "^1.8.11",
     "typescript": "^5.8.2",
     "@types/express": "^5.0.1",
     "@types/cors": "^2.8.17",
-    "@types/bun": "^1.2.6"
+    "@types/dockerode": "^3.3.42",
+    "@types/uuid": "^10.0.0",
+    "@types/tar-fs": "^2.0.4",
+    "@types/node": "^18.0.0",
+    "tsx": "^4.0.0"
   }
 }

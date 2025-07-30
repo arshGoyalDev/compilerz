@@ -4,7 +4,9 @@ import { useCallback, useState } from "react";
 
 import { createTheme } from "@uiw/codemirror-themes";
 import { tags as t } from "@lezer/highlight";
-import { useTheme } from "@/context";
+import { useSocket, useTheme } from "@/context";
+import { apiClient } from "@/lib/api-client";
+import { COMPILE_AND_RUN_ROUTE } from "@/lib/constants";
 
 const darkTheme = createTheme({
   theme: "dark",
@@ -73,17 +75,37 @@ const extensions = [cpp()];
 const Editor = ({
   filename,
   codeExample,
+  containerId,
 }: {
   filename: string;
   codeExample: string;
+  containerId: string
 }) => {
   const {theme, setTheme} = useTheme();
+  
+  const socket = useSocket();
 
   const [code, setCode] = useState(codeExample);
   
   const handleChange = useCallback((val: string) => {
     setCode(val);
   }, []);
+  
+  const handleRunBtnClick = async() => {
+    try{
+      const response = await apiClient.post(COMPILE_AND_RUN_ROUTE, {
+        containerId,
+        code,
+        filename
+      });
+      
+      if (response.status === 200) {
+        console.log("done");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   return (
     <div className="flex flex-col bg-neutral-100 dark:bg-neutral-900 border-r-2 border-t-2 border-neutral-200 dark:border-neutral-800 overflow-auto">
@@ -93,7 +115,7 @@ const Editor = ({
         </div>
         <div className="flex justify-end items-center w-full border-b-2 h-full border-neutral-200 dark:border-neutral-800">
           <button></button>
-          <button className="cursor-pointer bg-neutral-950 dark:bg-white py-1 h-fit px-4 text-white dark:text-black mr-2">
+          <button onClick={handleRunBtnClick} className="cursor-pointer bg-neutral-950 dark:bg-white py-1 h-fit px-4 text-white dark:text-black mr-2">
             Run
           </button>
         </div>

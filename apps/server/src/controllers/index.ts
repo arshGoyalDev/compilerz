@@ -60,8 +60,11 @@ const getRunCommand = (filename: string) => {
       break;
 
     case "ts":
-    case "js":
       command = `tsc ${filename} && node ${filename.replace(".ts", ".js")}`;
+      break;
+    
+    case "js":
+      command = `node ${filename}`;
       break;
 
     case "java":

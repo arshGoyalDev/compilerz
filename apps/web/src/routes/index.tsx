@@ -6,6 +6,7 @@ const HomePage = () => {
     { to: "cpp", label: "C++" },
     { to: "python", label: "Python" },
     { to: "rust", label: "Rust" },
+    { to: "js", label: "JavaScript" },
     { to: "ts", label: "TypeScript" },
     { to: "go", label: "Go" },
     { to: "java", label: "Java" },

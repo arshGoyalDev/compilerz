@@ -55,6 +55,11 @@ int main() {
       codeExample: `console.log("Hello, World!");`,
     },
     {
+      lang: "js",
+      fileExtension: "js",
+      codeExample: `console.log("Hello, World!");`,
+    },
+    {
       lang: "go",
       fileExtension: "go",
       codeExample: `package main

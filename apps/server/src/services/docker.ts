@@ -57,6 +57,7 @@ class DockerService {
       const containerMap = new Map<string, string>([
         ["python", "python:3.11-alpine"],
         ["ts", "node-ts:24-alpine"],
+        ['js', "node:24-alpine"],
         ["java", "openjdk:17-alpine"],
         ["go", "golang:1.19-alpine"],
         ["rust", "rust:1.70-alpine"],

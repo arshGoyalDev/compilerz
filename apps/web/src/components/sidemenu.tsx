@@ -15,6 +15,7 @@ const SideMenu = () => {
     { to: "python", label: "Python" },
     { to: "rust", label: "Rust" },
     { to: "ts", label: "TypeScript" },
+    { to: "js", label: "JavaScript" },
     { to: "go", label: "Go" },
     { to: "java", label: "Java" },
     { to: "ruby", label: "Ruby" },

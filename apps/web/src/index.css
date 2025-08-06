@@ -14,6 +14,18 @@ body {
   @apply dark:bg-neutral-950 dark:text-white;
 }
 
+/* scrollbars */
+
+*::-webkit-scrollbar {
+    width: 3px;
+}
+
+*::-webkit-scrollbar-thumb {
+    @apply bg-neutral-500 dark:bg-neutral-800 rounded-sm;
+}
+
+/* loading animation */
+
 .animate-loading {
   animation: loading-compiler 2s infinite ease-in-out;
 }

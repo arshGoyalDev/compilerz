@@ -21,7 +21,7 @@ class DockerService {
       createdAt: Date;
     }
   >;
-  public ptyProcesses: Map<string, IPty>
+  public ptyProcesses: Map<string, IPty>;
   private tempDir: string;
 
   constructor() {
@@ -55,15 +55,14 @@ class DockerService {
       const containerId = uuidv4();
 
       const containerMap = new Map<string, string>([
-        ["js", "node:24-alpine"],
         ["python", "python:3.11-alpine"],
-        ["ts", "node:24-alpine"],
+        ["ts", "node-ts:24-alpine"],
         ["java", "openjdk:17-alpine"],
         ["go", "golang:1.19-alpine"],
         ["rust", "rust:1.70-alpine"],
         ["ruby", "ruby:3.1-alpine"],
-        ["c", "gcc:11-alpine"],
-        ["cpp", "gcc:11-alpine"],
+        ["c", "gcc:alpine"],
+        ["cpp", "gcc:alpine"],
       ]);
 
       const imageName = containerMap.get(lang);
@@ -89,21 +88,24 @@ class DockerService {
       });
 
       await container.start();
-      
+
       // Fix: Use the actual container name instead of 'container_name'
-      const ptyProcess = pty.spawn('docker', ['exec', '-it', `compilerz-${containerId}`, '/bin/sh'], {
-        name: 'xterm-color',
-        cols: 80,
-        rows: 24,
-      });
-      
+      const ptyProcess = pty.spawn(
+        "docker",
+        ["exec", "-it", `compilerz-${containerId}`, "/bin/sh"],
+        {
+          name: "xterm-color",
+          cols: 80,
+          rows: 24,
+        },
+      );
+
       this.ptyProcesses.set(containerId, ptyProcess);
-      
+
       this.containers.set(containerId, {
         container,
         lang,
         createdAt: new Date(),
-        isRunning: true,
       });
 
       console.log(`DOCKER: Container created: ${containerId}`);
@@ -209,70 +211,29 @@ class DockerService {
 
       const { lang } = containerInfo;
 
-      switch (lang.toLowerCase()) {
-        case "python":
-          await this.createFile(containerId, filename, code);
-          return await this.executeCommand(containerId, `python ${filename}`);
+      // switch (lang.toLowerCase()) {
+      //   case "python":
+      return await this.createFile(containerId, filename, code);
 
-        case "js":
-          await this.createFile(containerId, filename, code);
-          return await this.executeCommand(containerId, `node ${filename}`);
+      //   case "ts":
+      //     return await this.createFile(containerId, filename, code);
 
-        case "ts":
-          await this.createFile(containerId, filename, code);
+      //   case "java":
+      //     return await this.createFile(containerId, filename, code);
 
-          await this.executeCommand(containerId, `npm install -g typescript`);
-          await this.executeCommand(containerId, `tsc ${filename}`);
+      //   case "go":
+      //     return await this.createFile(containerId, filename, code);
 
-          const jsFilename = filename.replace(/\.ts$/, ".js");
-          return await this.executeCommand(containerId, `node ${jsFilename}`);
+      //   case "rust":
+      //     return await this.createFile(containerId, filename, code);
 
-        case "java":
-          const className = filename.replace(".java", "");
+      //   case "ruby":
+      //     return await this.createFile(containerId, filename, code);
 
-          await this.createFile(containerId, filename, code);
-          await this.executeCommand(containerId, `javac ${filename}`);
-
-          return await this.executeCommand(containerId, `java ${className}`);
-
-        case "go":
-        case "golang":
-          await this.createFile(containerId, filename, code);
-          return await this.executeCommand(containerId, `go run ${filename}`);
-
-        case "rust":
-          await this.createFile(containerId, filename, code);
-
-          return await this.executeCommand(containerId, `rustc ${filename}`);
-
-        case "ruby":
-          await this.createFile(containerId, filename, code);
-          return await this.executeCommand(containerId, `ruby ${filename}`);
-
-        case "c":
-          await this.createFile(containerId, filename, code);
-
-          await this.executeCommand(
-            containerId,
-            `gcc ${filename} -o ${filename.replace(/\.c$/, "")}`,
-          );
-          const cBinary = `./${filename.replace(/\.c$/, "")}`;
-
-          return await this.executeCommand(containerId, cBinary);
-
-        case "cpp":
-        case "c++":
-        case "cxx":
-          await this.createFile(containerId, filename, code);
-
-          await this.executeCommand(
-            containerId,
-            `g++ ${filename} -o ${filename.replace(/\.(cpp|cc|cxx)$/, "")}`,
-          );
-          const cppBinary = `./${filename.replace(/\.(cpp|cc|cxx)$/, "")}`;
-
-          return await this.executeCommand(containerId, cppBinary);
-      }
+      //   case "c":
+      //   case "cpp":
+      //     return await this.createFile(containerId, filename, code);
+      // }
     } catch (error) {
       console.log("DOCKER: Compile and run failed:", error);
       throw error;

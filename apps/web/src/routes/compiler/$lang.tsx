@@ -1,6 +1,6 @@
 import Editor from "@/components/editor";
 import LoadingScreen from "@/components/loading-screen";
-import Terminal from "@/components/terminal";
+import Output from "@/components/output";
 import SideMenu from "@/components/sidemenu";
 
 import { createFileRoute, useParams } from "@tanstack/react-router";
@@ -11,9 +11,11 @@ import { useSocket } from "@/context";
 
 const CompilerPage = () => {
   const { lang } = useParams({ strict: false });
-  const socket = useSocket();
-  const [containerId, setContainerId] = useState<string | null>(null);
 
+  const socket = useSocket();
+
+  const [containerId, setContainerId] = useState<string | null>(null);
+  const [finalOutput, setFinalOutput] = useState<string[]>([]);
   const [loadingCompiler, setLoadingCompiler] = useState(true);
 
   const langSpecific = [
@@ -48,11 +50,6 @@ int main() {
 }`,
     },
     {
-      lang: "js",
-      fileExtension: "js",
-      codeExample: `console.log("Hello, World!");`,
-    },
-    {
       lang: "ts",
       fileExtension: "ts",
       codeExample: `console.log("Hello, World!");`,
@@ -81,7 +78,7 @@ func main() {
     {
       lang: "java",
       fileExtension: "java",
-      codeExample: `public class Main {
+      codeExample: `public class main {
     public static void main(String[] args) {
         System.out.println("Hello, World!");
     }
@@ -100,17 +97,11 @@ func main() {
           lang: currentLang?.lang ?? "",
         });
 
-        console.log(response);
-
         if (response.status === 201) {
           cId = response.data.containerInfo.containerId;
           setContainerId(cId);
           setLoadingCompiler(false);
         }
-
-        socket?.socket?.emit("set-container-id", {
-          containerId: cId,
-        });
       } catch (error) {
         console.log(error);
       }
@@ -143,7 +134,9 @@ func main() {
   }, []);
 
   useEffect(() => {
-    console.log(containerId);
+    socket?.socket?.emit("set-container-id", {
+      containerId,
+    });
   }, [containerId]);
 
   return (
@@ -160,9 +153,10 @@ func main() {
                 filename={`main.${currentLang?.fileExtension}`}
                 codeExample={currentLang?.codeExample}
                 containerId={containerId}
+                setFinalOutput={setFinalOutput}
               />
             )}
-            <Terminal />
+            <Output finalOutput={finalOutput} setFinalOutput={setFinalOutput} />
           </>
         )}
       </div>

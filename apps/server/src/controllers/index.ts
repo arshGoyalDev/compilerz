@@ -31,12 +31,64 @@ const compileAndRun = async (req: Request, res: Response) => {
 
     const ptyProcess = dockerService.ptyProcesses.get(containerId);
 
-    ptyProcess?.write(`./${filename.split(".")[0]}\n`);
+    const command = getRunCommand(filename);
+
+    console.log(command);
+
+    ptyProcess?.write(`${command}\n`);
 
     res.status(200).json({ success: true });
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
+};
+
+const getRunCommand = (filename: string) => {
+  let command: string;
+
+  switch (filename.split(".").at(-1)) {
+    case "js":
+      command = `node ${filename}`;
+      break;
+
+    case "rs":
+      command = `rustc --error-format=short ${filename} && ./${filename.split(".")[0]}`;
+      break;
+
+    case "py":
+      command = `python ${filename}`;
+      break;
+
+    case "ts":
+    case "js":
+      command = `tsc ${filename} && node ${filename.replace(".ts", ".js")}`;
+      break;
+
+    case "java":
+      command = `javac ${filename} && java ${filename.replace(".java", "")}`;
+      break;
+
+    case "rb":
+      command = `ruby ${filename}`;
+      break;
+
+    case "go":
+      command = `go run ${filename}`;
+      break;
+
+    case "c":
+      command = `gcc -o ${filename.split(".")[0]} ${filename} && ./${filename.split(".")[0]}`;
+      break;
+
+    case "cpp":
+      command = `g++ -o ${filename.split(".")[0]} ${filename} && ./${filename.split(".")[0]}`;
+      break;
+
+    default:
+      command = "";
+  }
+
+  return command;
 };
 
 const stopContainer = async (req: Request, res: Response) => {

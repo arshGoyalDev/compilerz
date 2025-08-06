@@ -14,7 +14,6 @@ const SideMenu = () => {
     { to: "cpp", label: "C++" },
     { to: "python", label: "Python" },
     { to: "rust", label: "Rust" },
-    { to: "js", label: "JavaScript" },
     { to: "ts", label: "TypeScript" },
     { to: "go", label: "Go" },
     { to: "java", label: "Java" },
@@ -26,8 +25,14 @@ const SideMenu = () => {
       className={`${menuCollapsed ? "w-16 px-2" : "w-64 px-3"} flex flex-col justify-between py-4 bg-neutral-100 dark:bg-neutral-900/40 border-r-2 border-neutral-200 dark:border-neutral-900 transition-all`}
     >
       <div className="flex flex-col">
-        <div className={`cursor-default flex items-center gap-3 px-2 ${menuCollapsed && "justify-center"}`}>
-          <img src="/compilerz.svg" alt="compilerz" className={`w-6 h-6 ${theme !== "dark" && "invert-100"}`} />
+        <div
+          className={`cursor-default flex items-center gap-3 px-2 ${menuCollapsed && "justify-center"}`}
+        >
+          <img
+            src="/compilerz.svg"
+            alt="compilerz"
+            className={`w-6 h-6 ${theme !== "dark" && "invert-100"}`}
+          />
           {!menuCollapsed && (
             <span className="font-extralight tracking-widest text-xl">
               Compilerz
@@ -48,7 +53,13 @@ const SideMenu = () => {
                 alt={link.label}
                 className="w-6 h-6"
               />
-              {!menuCollapsed && <span className={`${location.pathname.split("/").at(-1) === link.to && "text-black"}`}>{link.label}</span>}
+              {!menuCollapsed && (
+                <span
+                  className={`${location.pathname.split("/").at(-1) === link.to && "text-black"}`}
+                >
+                  {link.label}
+                </span>
+              )}
             </Link>
           ))}
         </div>
@@ -59,7 +70,9 @@ const SideMenu = () => {
         }}
         className={`cursor-pointer flex items-center gap-3 ${menuCollapsed && "justify-center"} px-2`}
       >
-        <span className={`${theme === "dark" ? "stroke-white" : "stroke-black"} ${!menuCollapsed && "rotate-180"}`}>
+        <span
+          className={`${theme === "dark" ? "stroke-white" : "stroke-black"} ${!menuCollapsed && "rotate-180"}`}
+        >
           <svg
             width="24"
             height="24"

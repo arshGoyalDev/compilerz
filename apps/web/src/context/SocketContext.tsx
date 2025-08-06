@@ -1,9 +1,11 @@
-import { createContext, useContext, type ReactNode, useRef, useEffect, useState } from "react";
+import { createContext, useContext, type ReactNode, useRef, useEffect, useState, type Dispatch, type SetStateAction } from "react";
 
 import { io, Socket } from "socket.io-client";
 
 interface SocketContextType {
   socket: Socket | null;
+  output: string[];
+  setOutput: Dispatch<SetStateAction<string[]>>
 }
 
 const SocketContext = createContext<SocketContextType | null>(null);
@@ -11,25 +13,17 @@ const SocketContext = createContext<SocketContextType | null>(null);
 const useSocket = () => useContext(SocketContext);
 
 const SocketProvider = ({ children }: { children: ReactNode }) => {
-  // const socket = useRef<Socket | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
-
+  const [output, setOutput] = useState<string[]>([]);
+  
   useEffect(() => {
     const socketInstance = io(import.meta.env.VITE_SERVER_URL, {
       withCredentials: true,
       transports: ["websocket"],
     });
     
-    socketInstance.on("connect", () => {
-      console.log("dkjdk")
-    });
-    
-    socketInstance.on('execution-complete', ({ success, output, exitCode }: { success: boolean; output: string; exitCode: string}) => {
-      console.log(`Output`, output);
-    })
-    
-    socketInstance.on("execution-error", (data) => {
-      console.log("Error:" ,data);
+    socketInstance.on("terminal:output", (terminalOutput) => {
+      setOutput((prev) => [...prev, ...terminalOutput]);
     })
 
     setSocket(socketInstance);
@@ -42,7 +36,7 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <SocketContext.Provider value={{ socket }}>
+    <SocketContext.Provider value={{ socket,output, setOutput }}>
       {children}
     </SocketContext.Provider>
   );

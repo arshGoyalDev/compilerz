@@ -1,12 +1,25 @@
-import CodeMirror from "@uiw/react-codemirror";
-import { cpp } from "@codemirror/lang-cpp";
-import { useCallback, useState } from "react";
+import {
+  useCallback,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 
-import { createTheme } from "@uiw/codemirror-themes";
-import { tags as t } from "@lezer/highlight";
 import { useSocket, useTheme } from "@/context";
+
 import { apiClient } from "@/lib/api-client";
 import { COMPILE_AND_RUN_ROUTE } from "@/lib/constants";
+
+import CodeMirror from "@uiw/react-codemirror";
+import { createTheme } from "@uiw/codemirror-themes";
+import { tags as t } from "@lezer/highlight";
+
+import { cpp } from "@codemirror/lang-cpp";
+import { javascript } from "@codemirror/lang-javascript";
+import { go } from "@codemirror/lang-go";
+import { python } from "@codemirror/lang-python";
+import { rust } from "@codemirror/lang-rust";
+import { java } from "@codemirror/lang-java";
 
 const darkTheme = createTheme({
   theme: "dark",
@@ -70,42 +83,42 @@ const lightTheme = createTheme({
   ],
 });
 
-const extensions = [cpp()];
+const extensions = [cpp(), javascript(), java(), rust(), go(), python()];
 
 const Editor = ({
   filename,
   codeExample,
   containerId,
+  setFinalOutput,
 }: {
   filename: string;
   codeExample: string;
-  containerId: string
+  containerId: string | null;
+  setFinalOutput: Dispatch<SetStateAction<string[]>>;
 }) => {
-  const {theme, setTheme} = useTheme();
-  
+  const { theme, setTheme } = useTheme();
   const socket = useSocket();
 
   const [code, setCode] = useState(codeExample);
-  
+
   const handleChange = useCallback((val: string) => {
     setCode(val);
   }, []);
-  
-  const handleRunBtnClick = async() => {
-    try{
-      const response = await apiClient.post(COMPILE_AND_RUN_ROUTE, {
+
+  const handleRunBtnClick = async () => {
+    try {
+      setFinalOutput([]);
+      socket?.setOutput([]);
+
+      await apiClient.post(COMPILE_AND_RUN_ROUTE, {
         containerId,
         code,
-        filename
+        filename,
       });
-      
-      if (response.status === 200) {
-        console.log("done");
-      }
     } catch (error) {
       console.log(error);
     }
-  }
+  };
 
   return (
     <div className="flex flex-col bg-neutral-100 dark:bg-neutral-900 border-r-2 border-t-2 border-neutral-200 dark:border-neutral-800 overflow-auto">
@@ -115,12 +128,15 @@ const Editor = ({
         </div>
         <div className="flex justify-end items-center w-full border-b-2 h-full border-neutral-200 dark:border-neutral-800">
           <button></button>
-          <button onClick={handleRunBtnClick} className="cursor-pointer bg-neutral-950 dark:bg-white py-1 h-fit px-4 text-white dark:text-black mr-2">
+          <button
+            onClick={handleRunBtnClick}
+            className="cursor-pointer bg-neutral-950 dark:bg-white py-1 h-fit px-4 text-white dark:text-black mr-2"
+          >
             Run
           </button>
         </div>
       </div>
-      <div className="bg-neutral-50 dark:bg-neutral-950 flex-1  overflow-y-auto">
+      <div className="bg-neutral-50 dark:bg-neutral-950 flex-1 overflow-y-auto">
         <CodeMirror
           value={code}
           theme={theme === "dark" ? darkTheme : lightTheme}

@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useState,
   type Dispatch,
   type SetStateAction,
@@ -100,6 +101,7 @@ const Editor = ({
   const socket = useSocket();
 
   const [code, setCode] = useState(codeExample);
+  const [codeCopySuccess, setCodeCopySuccess] = useState(false);
 
   const handleChange = useCallback((val: string) => {
     setCode(val);
@@ -120,14 +122,83 @@ const Editor = ({
     }
   };
 
+  const copyCode = async () => {
+    await navigator.clipboard.writeText(code);
+
+    setCodeCopySuccess(true);
+  };
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (codeCopySuccess) setCodeCopySuccess(false);
+    }, 2000);
+
+    return () => clearTimeout(timeout);
+  }, [codeCopySuccess]);
+
   return (
     <div className="flex flex-col bg-neutral-100 dark:bg-neutral-900 border-r-2 border-t-2 border-neutral-200 dark:border-neutral-800 overflow-auto">
       <div className="flex items-center">
         <div className="py-3 px-5 bg-neutral-50 dark:bg-neutral-950 border-r-2 border-neutral-200 dark:border-neutral-800">
           {filename}
         </div>
-        <div className="flex justify-end items-center w-full border-b-2 h-full border-neutral-200 dark:border-neutral-800">
-          <button></button>
+        <div className="flex justify-end gap-3 items-center w-full border-b-2 h-full border-neutral-200 dark:border-neutral-800">
+          <button
+            onClick={copyCode}
+            className="p-2 hover:bg-neutral-200/60 dark:hover:bg-neutral-800/70 rounded-sm transition-all "
+          >
+            <span className="stroke-black dark:stroke-white">
+              {!codeCopySuccess ? (
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M16 12.9V17.1C16 20.6 14.6 22 11.1 22H6.9C3.4 22 2 20.6 2 17.1V12.9C2 9.4 3.4 8 6.9 8H11.1C14.6 8 16 9.4 16 12.9Z"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M22 6.9V11.1C22 14.6 20.6 16 17.1 16H16V12.9C16 9.4 14.6 8 11.1 8H8V6.9C8 3.4 9.4 2 12.9 2H17.1C20.6 2 22 3.4 22 6.9Z"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M22 11.1V6.9C22 3.4 20.6 2 17.1 2H12.9C9.4 2 8 3.4 8 6.9V8H11.1C14.6 8 16 9.4 16 12.9V16H17.1C20.6 16 22 14.6 22 11.1Z"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M16 17.1V12.9C16 9.4 14.6 8 11.1 8H6.9C3.4 8 2 9.4 2 12.9V17.1C2 20.6 3.4 22 6.9 22H11.1C14.6 22 16 20.6 16 17.1Z"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M6.08008 15L8.03008 16.95L11.9201 13.05"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+            </span>
+          </button>
           <button
             onClick={handleRunBtnClick}
             className="cursor-pointer bg-neutral-950 dark:bg-white py-1 h-fit px-4 text-white dark:text-black mr-2"

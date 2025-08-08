@@ -7,7 +7,6 @@ import tar from "tar-fs";
 import type Stream from "stream";
 import pty, { type IPty } from "node-pty";
 
-// ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -58,9 +57,9 @@ class DockerService {
         ["python", "python:3.11-alpine"],
         ["ts", "node-ts:24-alpine"],
         ['js', "node:24-alpine"],
-        ["java", "openjdk:17-alpine"],
+        ["java", "alpine/java:21-jdk"],
         ["go", "golang:1.19-alpine"],
-        ["rust", "rust:1.70-alpine"],
+        ["rust", "rust:1.88-alpine"],
         ["ruby", "ruby:3.1-alpine"],
         ["c", "gcc:alpine"],
         ["cpp", "gcc:alpine"],

@@ -8,7 +8,7 @@ const ThemeContext = createContext({
 const useTheme = () => useContext(ThemeContext);
 
 const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
     if (theme === "dark") {
@@ -19,6 +19,12 @@ const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       document.documentElement.classList.remove("dark");
     }
   }, [theme]);
+  
+  useEffect(() => {
+    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+    
+    if (!prefersDarkScheme) setTheme("dark");
+  }, [])
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>

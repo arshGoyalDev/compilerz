@@ -17,6 +17,8 @@
 
 ## Getting Started
 
+### Local Setup
+
 - First, install the dependencies:
 
 ```bash
@@ -28,6 +30,14 @@ pnpm install
 
 ```bash
 pnpm dev
+```
+
+### Docker Setup (Preferred)
+
+```bash
+docker build -t compilerz .
+
+docker run -it -v /var/run/docker.sock:/var/run/docker.sock -p 3000:3000 -p 8000:8000 compilerz
 ```
 
 Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.

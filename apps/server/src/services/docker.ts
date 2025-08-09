@@ -56,7 +56,7 @@ class DockerService {
       const containerMap = new Map<string, string>([
         ["python", "python:3.11-alpine"],
         ["ts", "node-ts:24-alpine"],
-        ['js', "node:24-alpine"],
+        ["js", "node:24-alpine"],
         ["java", "alpine/java:21-jdk"],
         ["go", "golang:1.19-alpine"],
         ["rust", "rust:1.88-alpine"],
@@ -67,7 +67,7 @@ class DockerService {
 
       const imageName = containerMap.get(lang);
 
-      await this.pullImage(imageName ?? "");
+      await this.checkForImage(imageName ?? "");
 
       const container = await this.docker.createContainer({
         Image: imageName,
@@ -89,7 +89,6 @@ class DockerService {
 
       await container.start();
 
-      // Fix: Use the actual container name instead of 'container_name'
       const ptyProcess = pty.spawn(
         "docker",
         ["exec", "-it", `compilerz-${containerId}`, "/bin/sh"],
@@ -115,7 +114,7 @@ class DockerService {
     }
   }
 
-  private async pullImage(imageName: string): Promise<void> {
+  private async checkForImage(imageName: string): Promise<void> {
     try {
       const images = await this.docker.listImages();
 
@@ -123,12 +122,72 @@ class DockerService {
         (img) => img.RepoTags && img.RepoTags.includes(imageName),
       );
 
-      if (!imageExists) {
+      if (imageExists) return;
+
+      const buildImage =
+        imageName === "gcc:alpine" || imageName === "node-ts:24-alpine";
+
+      const projectRoot = path.resolve(__dirname, "../");
+
+      let stream: NodeJS.ReadableStream | null = null;
+
+      if (imageName === "gcc:alpine" || imageName === "node-ts:24-alpine") {
+        console.log(`DOCKER: Building Image: ${imageName}`);
+
+        const dockerfilePath = `dockerfile/${imageName === "gcc:alpine" ? "gcc" : "ts"}.Dockerfile`;
+
+        stream = await this.docker.buildImage(
+          {
+            context: projectRoot,
+            src: [dockerfilePath],
+          },
+          {
+            t: imageName,
+            dockerfile: dockerfilePath,
+          },
+        );
+      }
+
+      if (!buildImage) {
         console.log(`DOCKER: Pulling Image: ${imageName}`);
+        stream = await this.docker.pull(imageName);
+      }
 
-        await this.docker.pull(imageName);
+      if (stream) {
+        await new Promise((resolve, reject) => {
+          this.docker.modem.followProgress(
+            stream,
+            (error, res) => {
+              if (error) {
+                if (buildImage)
+                  console.error(
+                    "DOCKER: Image Build failed:",
+                    error,
+                    imageName,
+                  );
+                else
+                  console.error("DOCKER: Image Pull failed:", error, imageName);
+                reject(error);
+              } else {
+                if (buildImage)
+                  console.log(
+                    `DOCKER: Image builded Successfully: ${imageName}`,
+                  );
+                else
+                  console.log(
+                    `DOCKER: Image pulled Successfully: ${imageName}`,
+                  );
 
-        console.log(`DOCKER: Image Pulled Successfully: ${imageName}`);
+                resolve(res);
+              }
+            },
+            (event) => {
+              if (event.stream) {
+                process.stdout.write(event.stream);
+              }
+            },
+          );
+        });
       }
     } catch (error) {
       console.log(`DOCKER: Failed to pull image ${imageName}: ${error}`);
@@ -189,7 +248,6 @@ class DockerService {
       });
 
       await exec.start({ hijack: false, stdin: false });
-
       return exec.id;
     } catch (error) {
       console.log("DOCKER: command execution failed:", error);
@@ -204,36 +262,9 @@ class DockerService {
   ) {
     try {
       const containerInfo = this.containers.get(containerId);
+      if (!containerInfo) return false;
 
-      if (!containerInfo) {
-        return false;
-      }
-
-      const { lang } = containerInfo;
-
-      // switch (lang.toLowerCase()) {
-      //   case "python":
       return await this.createFile(containerId, filename, code);
-
-      //   case "ts":
-      //     return await this.createFile(containerId, filename, code);
-
-      //   case "java":
-      //     return await this.createFile(containerId, filename, code);
-
-      //   case "go":
-      //     return await this.createFile(containerId, filename, code);
-
-      //   case "rust":
-      //     return await this.createFile(containerId, filename, code);
-
-      //   case "ruby":
-      //     return await this.createFile(containerId, filename, code);
-
-      //   case "c":
-      //   case "cpp":
-      //     return await this.createFile(containerId, filename, code);
-      // }
     } catch (error) {
       console.log("DOCKER: Compile and run failed:", error);
       throw error;

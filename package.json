@@ -5,7 +5,6 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "check-types": "turbo run check-types",
-    "dev:native": "turbo run dev --filter=native",
     "dev:web": "turbo run dev --filter=web",
     "dev:server": "turbo run dev --filter=server"
   },

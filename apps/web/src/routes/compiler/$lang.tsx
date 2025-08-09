@@ -117,6 +117,8 @@ func main() {
     return () => {
       const stopContainer = async () => {
         try {
+          socket?.setOutput([]);
+          
           const response = await apiClient.post(STOP_CONTAINER_ROUTE, {
             containerId: cId,
           });

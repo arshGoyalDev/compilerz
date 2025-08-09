@@ -23,7 +23,7 @@ const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
     
-    if (!prefersDarkScheme) setTheme("dark");
+    if (prefersDarkScheme) setTheme("dark");
   }, [])
 
   return (

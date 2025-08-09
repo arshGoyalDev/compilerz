@@ -40,15 +40,15 @@ docker build -t compilerz .
 docker run -it -v /var/run/docker.sock:/var/run/docker.sock -p 3000:3000 -p 8000:8000 compilerz
 ```
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
+Open [http://localhost:3001](http://localhost:3000) in your browser to see the web application.
 The API is running at [http://localhost:8000](http://localhost:8000).
 
 ## Project Structure
 
 ```
-online-compiler/
+compilerz/
 ├── apps/
-│   ├── web/         # Frontend application (React + TanStack Router)
+│   ├── web/         # Frontend application (React + TanStack Router + TailwindCSS)
 │   └── server/      # Backend API (Express)
 ```
 

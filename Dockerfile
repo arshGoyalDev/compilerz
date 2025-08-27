@@ -2,8 +2,6 @@ FROM node:22-alpine AS builder
 
 WORKDIR /build
 
-RUN apk add --no-cache python3 make g++ gcc
-
 RUN npm install -g turbo pnpm
 
 COPY *.json ./
@@ -17,11 +15,9 @@ COPY . .
 
 RUN pnpm run build
 
-# CMD ["/bin/sh"]
-
 FROM docker:dind AS runner
 
-RUN apk add --no-cache nodejs npm python3 make g++ gcc
+RUN apk add --no-cache nodejs npm
 
 WORKDIR /app
 
@@ -50,7 +46,7 @@ RUN echo '{\
 RUN npm install concurrently
 
 RUN echo '{ \
-    "name": "chatters", \
+    "name": "compilerz", \
     \
     "version": "1.0.0", \
     \

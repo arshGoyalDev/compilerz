@@ -6,7 +6,7 @@ import SideMenu from "@/components/sidemenu";
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api-client";
-import { START_CONTAINER_ROUTE, STOP_CONTAINER_ROUTE } from "@/lib/constants";
+import { START_SESSION_ROUTE, STOP_SESSION_ROUTE } from "@/lib/constants";
 import { useSocket } from "@/context";
 
 const CompilerPage = () => {
@@ -14,8 +14,7 @@ const CompilerPage = () => {
 
   const socket = useSocket();
 
-  const [containerId, setContainerId] = useState<string | null>(null);
-  const [finalOutput, setFinalOutput] = useState<string[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [loadingCompiler, setLoadingCompiler] = useState(true);
 
   const langSpecific = [
@@ -94,17 +93,17 @@ func main() {
   const currentLang = langSpecific.find((item) => item.lang === lang);
 
   useEffect(() => {
-    let cId: string;
+    let sId: string;
 
-    const startContainer = async () => {
+    const startSession = async () => {
       try {
-        const response = await apiClient.post(START_CONTAINER_ROUTE, {
+        const response = await apiClient.post(START_SESSION_ROUTE, {
           lang: currentLang?.lang ?? "",
         });
 
         if (response.status === 201) {
-          cId = response.data.containerInfo.containerId;
-          setContainerId(cId);
+          sId = response.data.session.sessionId;
+          setSessionId(sId);
           setLoadingCompiler(false);
         }
       } catch (error) {
@@ -112,23 +111,23 @@ func main() {
       }
     };
 
-    startContainer();
+    startSession();
 
     return () => {
-      const stopContainer = async () => {
+      const stopSession = async () => {
         try {
           socket?.setOutput([]);
-          
-          const response = await apiClient.post(STOP_CONTAINER_ROUTE, {
-            containerId: cId,
+
+          const response = await apiClient.post(STOP_SESSION_ROUTE, {
+            sessionId: sId,
           });
 
           if (response.status === 200) {
-            setContainerId(null);
+            setSessionId(null);
             setLoadingCompiler(false);
 
-            socket?.socket?.emit("set-container-id", {
-              containerId: null,
+            socket?.socket?.emit("set-session-id", {
+              sessionId: null,
             });
           }
         } catch (error) {
@@ -136,15 +135,15 @@ func main() {
         }
       };
 
-      stopContainer();
+      stopSession();
     };
   }, []);
 
   useEffect(() => {
-    socket?.socket?.emit("set-container-id", {
-      containerId,
+    socket?.socket?.emit("set-session-id", {
+      sessionId,
     });
-  }, [containerId]);
+  }, [sessionId]);
 
   return (
     <main className="h-screen grid grid-cols-[auto_1fr]">
@@ -159,11 +158,10 @@ func main() {
               <Editor
                 filename={`main.${currentLang?.fileExtension}`}
                 codeExample={currentLang?.codeExample}
-                containerId={containerId}
-                setFinalOutput={setFinalOutput}
+                sessionId={sessionId}
               />
             )}
-            <Output finalOutput={finalOutput} setFinalOutput={setFinalOutput} />
+            <Output />
           </>
         )}
       </div>

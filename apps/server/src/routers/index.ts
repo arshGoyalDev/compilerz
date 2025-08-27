@@ -1,11 +1,11 @@
 import { Router } from "express";
 
-import { compileAndRun, startContainer, stopContainer } from "@/controllers";
+import { createFile, startSession, stopSession } from "@/controllers";
 
 const routes: Router = Router();
 
-routes.post("/start-container", startContainer);
-routes.post("/stop-container", stopContainer);
-routes.post("/compile-and-run", compileAndRun);
+routes.post("/start-session", startSession);
+routes.post("/stop-session", stopSession);
+routes.post("/create-file", createFile);
 
 export default routes;

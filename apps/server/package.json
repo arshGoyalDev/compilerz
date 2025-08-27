@@ -15,8 +15,7 @@
     "socket.io": "^4.8.1",
     "dockerode": "^4.0.7",
     "uuid": "^9.0.1",
-    "tar-fs": "^3.0.4",
-    "node-pty": "^1.0.0"
+    "tar-fs": "^3.0.4"
   },
   "devDependencies": {
     "tsc-alias": "^1.8.11",

@@ -1,6 +1,7 @@
 import { Socket, type Server } from "socket.io";
 import dockerService from "./docker";
 import { time } from "console";
+import Stream from "stream";
 
 class SocketService {
   private io: Server | null;
@@ -8,8 +9,9 @@ class SocketService {
     string,
     {
       socket: Socket;
-      containerId: string | null;
+      sessionId: string | null;
       connectedAt: Date;
+      stream: Stream.Duplex | null;
       outputBuffer?: string;
     }
   >;
@@ -17,74 +19,6 @@ class SocketService {
   constructor() {
     this.io = null;
     this.connections = new Map();
-  }
-
-  private processTerminalData(socketId: string, rawData: string) {
-    const connection = this.connections.get(socketId);
-    if (!connection) return;
-
-    if (!connection.outputBuffer) {
-      connection.outputBuffer = "";
-    }
-
-    connection.outputBuffer += rawData;
-
-    const lines = connection.outputBuffer.split("\n");
-    const filteredLines = lines.filter((line) => {
-      const trimmed = line.trim();
-      return (
-        trimmed &&
-        !trimmed.startsWith("./") &&
-        !trimmed.startsWith("$ ") &&
-        !trimmed.startsWith("# ") &&
-        !trimmed.match(/^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+:/)
-      );
-    });
-
-    const finalOutput = filteredLines.map((line) => {
-      return line.replace(/\x1B\[[0-?]*[ -/]*[@-~]/g, "");
-    });
-
-    if (finalOutput.length > 0) {
-      const actualOutput = finalOutput.join("\n");
-      if (!actualOutput.includes("/app #")) {
-        connection.socket.emit("terminal:output", finalOutput);
-      }
-    }
-
-    const lastNewlineIndex = connection.outputBuffer.lastIndexOf("\n");
-    if (lastNewlineIndex !== -1) {
-      connection.outputBuffer = connection.outputBuffer.substring(
-        lastNewlineIndex + 1,
-      );
-    }
-  }
-
-  private setupPtyConnection(socketId: string, containerId: string) {
-    const connection = this.connections.get(socketId);
-    if (!connection) return;
-
-    const ptyProcess = dockerService.ptyProcesses.get(containerId);
-    if (!ptyProcess) {
-      console.log(`DOCKER: No pty process found for container: ${containerId}`);
-      return;
-    }
-
-    const dataListener = (data: any) => {
-      const dataStr = data.toString();
-
-      const timeout = setTimeout(() => {
-        this.processTerminalData(socketId, dataStr);
-      }, 600);
-
-      return () => clearTimeout(timeout);
-    };
-
-    ptyProcess.onData(dataListener);
-
-    console.log(
-      `SOCKET: Pty connection established for container: ${containerId}`,
-    );
   }
 
   public init(io: Server) {
@@ -95,35 +29,87 @@ class SocketService {
 
       this.connections.set(socket.id, {
         socket,
-        containerId: null,
+        sessionId: null,
         connectedAt: new Date(),
+        stream: null,
+      });
+
+      socket.on("set-session-id", ({ sessionId }: { sessionId: string }) => {
+        console.log(sessionId);
+        const connection = this.connections.get(socket.id);
+
+        if (connection) {
+          this.connections.set(socket.id, {
+            ...connection,
+            sessionId,
+          });
+        }
       });
 
       socket.on(
-        "set-container-id",
-        ({ containerId }: { containerId: string }) => {
-          console.log(containerId);
+        "compile-and-run",
+        async ({
+          sessionId,
+          command,
+        }: {
+          sessionId: string;
+          command: string;
+        }) => {
           const connection = this.connections.get(socket.id);
-          
-          if (connection) {
+          const session = dockerService.sessions.get(
+            connection?.sessionId || "",
+          );
+
+          if (!connection)
+            return new Error(`No Connection Found: ${socket.id}`);
+          if (!session) return new Error(`No Session Found: ${sessionId}`);
+
+          const execInstance = await session.container.exec({
+            Cmd: ["sh", "-c", command],
+            AttachStdin: true,
+            AttachStdout: true,
+            AttachStderr: true,
+            Tty: true,
+          });
+
+          const stream = await execInstance.start({
+            Tty: true,
+            stdin: true,
+          });
+
+          stream.setEncoding("utf8");
+
+          if (connection)
             this.connections.set(socket.id, {
               ...connection,
-              containerId,
+              stream,
             });
 
-            this.setupPtyConnection(socket.id, containerId);
-          }
+          stream.on("data", (chunk) => {
+            io.to(socket.id).emit("terminal:output", {
+              chunk,
+            });
+            console.log("Output:", chunk);
+          });
+
+          stream.on("end", () => {
+            io.to(socket.id).emit("execution:completed", {
+              execComplete: true,
+            });
+            console.log("Execution Completed");
+          });
         },
       );
 
-      socket.on("terminal:input", ({ command }: { command: string }) => {
-        const ptyProcess = dockerService.ptyProcesses.get(
-          this.connections.get(socket.id)?.containerId ?? "",
-        );
+      socket.on("terminal:input", ({ value }: { value: string }) => {
+        const connection = this.connections.get(socket.id);
 
-        if (ptyProcess) {
-          ptyProcess.write(`${command}\n`);
-        }
+        if (!connection?.stream)
+          return new Error(`No Stream Found: ${socket.id}`);
+
+        const { stream } = connection;
+
+        stream.write(value);
       });
 
       socket.on("disconnect", async () => {

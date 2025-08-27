@@ -2,42 +2,39 @@ import type { Response, Request } from "express";
 
 import dockerService from "@/services/docker";
 
-const startContainer = async (req: Request, res: Response) => {
+const startSession = async (req: Request, res: Response) => {
   try {
     const { lang }: { lang: string } = req.body;
     if (!lang) throw new Error("No Language provided");
 
-    const containerInfo = await dockerService.createContainer(lang);
+    const session = await dockerService.createSession(lang);
 
-    res.status(201).json({ containerInfo });
+    res.status(201).json({ session });
   } catch (error) {
     res.status(500).json({ error });
   }
 };
 
-const compileAndRun = async (req: Request, res: Response) => {
+const createFile = async (req: Request, res: Response) => {
   try {
     const {
       filename,
       code,
-      containerId,
-    }: { filename: string; code: string; containerId: string } = req.body;
+      sessionId,
+    }: { filename: string; code: string; sessionId: string } = req.body;
 
-    if (!containerId) throw new Error("No Container Id Provided");
+    if (!sessionId) throw new Error("No Session Id Provided");
     if (!filename) throw new Error("No Filename Provided");
     if (!code) throw new Error("No Code Provided");
 
-    await dockerService.compileAndRun(containerId, filename, code);
-
-    const ptyProcess = dockerService.ptyProcesses.get(containerId);
+    await dockerService.createFile(sessionId, filename, code);
 
     const command = getRunCommand(filename);
 
-    console.log(command);
+    res.status(200).json({
+      command,
+    });
 
-    ptyProcess?.write(`${command}\n`);
-
-    res.status(200).json({ success: true });
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
@@ -62,7 +59,7 @@ const getRunCommand = (filename: string) => {
     case "ts":
       command = `tsc ${filename} && node ${filename.replace(".ts", ".js")}`;
       break;
-    
+
     case "js":
       command = `node ${filename}`;
       break;
@@ -80,7 +77,7 @@ const getRunCommand = (filename: string) => {
       break;
 
     case "c":
-      command = `gcc -o ${filename.split(".")[0]} ${filename} && ./${filename.split(".")[0]}`;
+      command = `gcc -o ${filename.split(".")[0]}.out ${filename} && ./${filename.split(".")[0]}.out`;
       break;
 
     case "cpp":
@@ -94,23 +91,23 @@ const getRunCommand = (filename: string) => {
   return command;
 };
 
-const stopContainer = async (req: Request, res: Response) => {
+const stopSession = async (req: Request, res: Response) => {
   try {
-    const { containerId }: { containerId: string } = req.body;
+    const { sessionId }: { sessionId: string } = req.body;
 
-    if (!containerId) throw new Error("No Container Id provided");
+    if (!sessionId) throw new Error("No Session Id provided");
 
-    const { containerStopped, error } =
-      await dockerService.stopContainer(containerId);
+    const { sessionStopped, error } =
+      await dockerService.stopSession(sessionId);
 
     if (error) {
       throw error;
     }
 
-    res.status(200).json({ containerStopped });
+    res.status(200).json({ sessionStopped });
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
 };
 
-export { startContainer, compileAndRun, stopContainer };
+export { startSession, createFile, stopSession };

@@ -4,15 +4,14 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { v4 as uuidv4 } from "uuid";
 import tar from "tar-fs";
-import type Stream from "stream";
-import pty, { type IPty } from "node-pty";
+import Stream from "stream";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 class DockerService {
-  private docker: Docker;
-  public containers: Map<
+  public docker: Docker;
+  public sessions: Map<
     string,
     {
       container: Docker.Container;
@@ -20,13 +19,11 @@ class DockerService {
       createdAt: Date;
     }
   >;
-  public ptyProcesses: Map<string, IPty>;
   private tempDir: string;
 
   constructor() {
     this.docker = new Docker();
-    this.containers = new Map();
-    this.ptyProcesses = new Map();
+    this.sessions = new Map();
     this.tempDir = path.join(__dirname, "../temp");
     this.ensureTempDir();
   }
@@ -47,11 +44,11 @@ class DockerService {
     }
   }
 
-  public async createContainer(
+  public async createSession(
     lang: string,
-  ): Promise<{ containerId: string; lang: string }> {
+  ): Promise<{ sessionId: string; lang: string }> {
     try {
-      const containerId = uuidv4();
+      const sessionId = uuidv4();
 
       const containerMap = new Map<string, string>([
         ["python", "python:3.11-alpine"],
@@ -79,36 +76,33 @@ class DockerService {
         Tty: true,
         OpenStdin: true,
         StdinOnce: true,
-        name: `compilerz-${containerId}`,
+        name: `compilerz-${sessionId}`,
         HostConfig: {
           AutoRemove: true,
           Memory: 512 * 1024 * 1024,
           CpuQuota: 50000,
+          CpuShares: 512,
+          NetworkMode: "none",
+          ReadonlyRootfs: false,
+          Tmpfs: {
+            "/tmp": "rw,size=100m",
+          },
+          SecurityOpt: ["no-new-privileges"],
+          CapDrop: ["ALL"],
+          CapAdd: ["CHOWN", "SETGID", "SETUID"],
         },
       });
 
       await container.start();
 
-      const ptyProcess = pty.spawn(
-        "docker",
-        ["exec", "-it", `compilerz-${containerId}`, "/bin/sh"],
-        {
-          name: "xterm-color",
-          cols: 80,
-          rows: 24,
-        },
-      );
-
-      this.ptyProcesses.set(containerId, ptyProcess);
-
-      this.containers.set(containerId, {
+      this.sessions.set(sessionId, {
         container,
         lang,
         createdAt: new Date(),
       });
 
-      console.log(`DOCKER: Container created: ${containerId}`);
-      return { containerId, lang };
+      console.log(`DOCKER: Session created: ${sessionId}`);
+      return { sessionId, lang };
     } catch (error) {
       throw error;
     }
@@ -195,23 +189,23 @@ class DockerService {
     }
   }
 
-  private async createFile(
-    containerId: string,
+  public async createFile(
+    sessionId: string,
     filename: string,
     content: string,
   ) {
     try {
-      const containerInfo = this.containers.get(containerId);
+      const session = this.sessions.get(sessionId);
 
-      if (!containerInfo) {
-        throw new Error("DOCKER: Container not found");
+      if (!session) {
+        throw new Error("DOCKER: Session not found");
       }
 
-      const { container } = containerInfo;
+      const { container } = session;
 
       console.log(this.tempDir, filename);
 
-      const tarPath = path.join(this.tempDir, `${containerId}-${filename}.tar`);
+      const tarPath = path.join(this.tempDir, `${sessionId}-${filename}.tar`);
       const filePath = path.join(this.tempDir, filename);
 
       fs.writeFileSync(filePath, content);
@@ -229,15 +223,15 @@ class DockerService {
     }
   }
 
-  private async executeCommand(containerId: string, command: string) {
+  private async executeCommand(sessionId: string, command: string) {
     try {
-      const containerInfo = this.containers.get(containerId);
+      const session = this.sessions.get(sessionId);
 
-      if (!containerInfo) {
-        throw new Error("DOCKER: Container not found");
+      if (!session) {
+        throw new Error("DOCKER: Session not found");
       }
 
-      const { container } = containerInfo;
+      const { container } = session;
 
       const exec = await container.exec({
         Cmd: ["sh", "-c", command],
@@ -255,38 +249,21 @@ class DockerService {
     }
   }
 
-  public async compileAndRun(
-    containerId: string,
-    filename: string,
-    code: string,
-  ) {
+  public async stopSession(sessionId: string) {
     try {
-      const containerInfo = this.containers.get(containerId);
-      if (!containerInfo) return false;
+      const session = this.sessions.get(sessionId);
 
-      return await this.createFile(containerId, filename, code);
+      if (!session) throw new Error(`DOCKER: Session not found: ${sessionId}`);
+
+      await session.container.stop();
+
+      this.sessions.delete(sessionId);
+
+      console.log(`DOCKER: Session stopped and removed: ${sessionId}`);
+
+      return { sessionStopped: true };
     } catch (error) {
-      console.log("DOCKER: Compile and run failed:", error);
-      throw error;
-    }
-  }
-
-  public async stopContainer(containerId: string) {
-    try {
-      const containerInfo = this.containers.get(containerId);
-
-      if (!containerInfo)
-        throw new Error(`DOCKER: container not found: ${containerId}`);
-
-      await containerInfo.container.stop();
-
-      this.containers.delete(containerId);
-
-      console.log(`DOCKER: Container stopped and removed: ${containerId}`);
-
-      return { containerStopped: true };
-    } catch (error) {
-      return { containerStopped: false, error: error as Error };
+      return { sessionStopped: false, error: error as Error };
     }
   }
 }

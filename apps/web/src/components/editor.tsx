@@ -9,7 +9,7 @@ import {
 import { useSocket, useTheme } from "@/context";
 
 import { apiClient } from "@/lib/api-client";
-import { COMPILE_AND_RUN_ROUTE } from "@/lib/constants";
+import { CREATE_FILE_ROUTE } from "@/lib/constants";
 
 import CodeMirror from "@uiw/react-codemirror";
 import { createTheme } from "@uiw/codemirror-themes";
@@ -89,13 +89,11 @@ const extensions = [cpp(), javascript(), java(), rust(), go(), python()];
 const Editor = ({
   filename,
   codeExample,
-  containerId,
-  setFinalOutput,
+  sessionId,
 }: {
   filename: string;
   codeExample: string;
-  containerId: string | null;
-  setFinalOutput: Dispatch<SetStateAction<string[]>>;
+  sessionId: string | null;
 }) => {
   const { theme, setTheme } = useTheme();
   const socket = useSocket();
@@ -109,13 +107,20 @@ const Editor = ({
 
   const handleRunBtnClick = async () => {
     try {
-      setFinalOutput([]);
       socket?.setOutput([]);
+      socket?.setExecRunning(true);
 
-      await apiClient.post(COMPILE_AND_RUN_ROUTE, {
-        containerId,
+      const response = await apiClient.post(CREATE_FILE_ROUTE, {
+        sessionId,
         code,
         filename,
+      });
+
+      const command = response.data.command;
+
+      socket?.socket?.emit("compile-and-run", {
+        sessionId,
+        command,
       });
     } catch (error) {
       console.log(error);
